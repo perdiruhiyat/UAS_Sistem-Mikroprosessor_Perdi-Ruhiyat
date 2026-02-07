@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ESP32 Quantum Alert</title>
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-color: #050b18;
+      --card-bg: rgba(30, 41, 59, 0.7);
+      --accent-cyan: #22d3ee;
+      --accent-red: #f43f5e;
+      --accent-green: #10b981;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: radial-gradient(circle at top right, #1e293b, #050b18);
+      color: var(--text-main);
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    h1 {
+      margin-top: 40px;
+      font-weight: 800;
+      letter-spacing: -1px;
+      text-transform: uppercase;
+      background: linear-gradient(to right, #38bdf8, #818cf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.3));
+    }
+
+    .container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+      width: 90%;
+      max-width: 1000px;
+      padding: 20px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      padding: 24px;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+
+    .label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 10px;
+    }
+
+    .value {
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 5px;
+    }
+
+    /* LED Glow Effect */
+    .led {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: #475569;
+      transition: all 0.5s ease;
+    }
+
+    .led-active {
+      box-shadow: 0 0 15px currentColor;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.6; }
+      100% { opacity: 1; }
+    }
+
+    /* Control Buttons */
+    .button-group {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+      gap: 8px;
+      margin-top: 15px;
+    }
+
+    button {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-main);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 12px 10px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    button:hover {
+      background: var(--accent-cyan);
+      color: #000;
+      box-shadow: 0 0 15px rgba(34, 211, 238, 0.4);
+    }
+
+    button:active {
+      transform: scale(0.95);
+    }
+
+    .status-online { color: var(--accent-green); }
+    .status-alert { color: var(--accent-red); }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg-color); }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+  </style>
+</head>
+<body>
+
+<h1>Quantum Alert System</h1>
+
+<div class="container">
+  <div class="card">
+    <div id="modeLed" class="led"></div>
+    <div class="label">Operation Mode</div>
+    <div id="mode" class="value">STANDBY</div>
+    <div class="label" id="status-text">System Ready</div>
+  </div>
+
+  <div class="card">
+    <div class="label">Intensity Level</div>
+    <div id="level" class="value">0</div>
+    <div class="label">Active Stage</div>
+  </div>
+
+  <div class="card">
+    <div class="label">Luminance</div>
+    <div id="brightness" class="value">0%</div>
+    <div class="label">Light Sensor</div>
+  </div>
+
+  <div class="card">
+    <div class="label">ESP32 IP Address</div>
+    <div id="ip" class="value" style="font-size: 20px; padding-top: 10px;">0.0.0.0</div>
+  </div>
+
+  <div class="card" style="grid-column: span 1;">
+    <div class="label">Mode Override</div>
+    <div class="button-group">
+      <button onclick="setMode('NORMAL')">NORMAL</button>
+      <button onclick="setMode('ALERT')" style="border-color: var(--accent-red);">ALERT</button>
+      <button onclick="setMode('SEQUENCE')">SEQ</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="label">Level Control</div>
+    <div class="button-group">
+      <button onclick="setLevel(1)">L1</button>
+      <button onclick="setLevel(2)">L2</button>
+      <button onclick="setLevel(3)">L3</button>
+      <button onclick="setLevel(4)">L4</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const broker = "wss://2083e7657f56476fb8cd14cff9ad3653.s1.eu.hivemq.cloud:8884/mqtt";
+const options = {
+  username: "mqtt-perdi",
+  password: "@Perdi123",
+  clientId: "web_client_" + Math.floor(Math.random() * 10000)
+};
+
+const client = mqtt.connect(broker, options);
+
+client.on("connect", () => {
+  console.log("Connected to Quantum Broker");
+  client.subscribe("esp32/alert/status");
+});
+
+client.on("message", (topic, message) => {
+  try {
+    const data = JSON.parse(message.toString());
+    
+    // Update Values with animation
+    updateText("mode", data.mode);
+    updateText("level", data.level);
+    updateText("brightness", data.brightness + "%");
+    updateText("ip", data.ip);
+
+    const led = document.getElementById("modeLed");
+    const statusText = document.getElementById("status-text");
+    
+    led.classList.add("led-active");
+    
+    if (data.mode === "NORMAL") {
+      led.style.color = "#10b981";
+      led.style.background = "#10b981";
+      statusText.innerText = "All systems nominal";
+    } else if (data.mode === "ALERT") {
+      led.style.color = "#f43f5e";
+      led.style.background = "#f43f5e";
+      statusText.innerText = "Alert triggered!";
+    } else {
+      led.style.color = "#22d3ee";
+      led.style.background = "#22d3ee";
+      statusText.innerText = "Running sequence...";
+    }
+  } catch (e) {
+    console.error("Payload error", e);
+  }
+});
+
+function updateText(id, val) {
+  const el = document.getElementById(id);
+  if(el.innerText !== val.toString()) {
+    el.style.opacity = 0;
+    setTimeout(() => {
+      el.innerText = val;
+      el.style.opacity = 1;
+    }, 200);
+  }
+}
+
+function setMode(mode) {
+  client.publish("esp32/alert/control", JSON.stringify({ mode: mode }));
+}
+
+function setLevel(level) {
+  client.publish("esp32/alert/control", JSON.stringify({ level: level }));
+}
+</script>
+
+</body>
+</html>
