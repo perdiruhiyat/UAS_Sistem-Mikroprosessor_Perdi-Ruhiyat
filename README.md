@@ -1,34 +1,20 @@
 # Sistem Monitoring dan Kontrol Perangkat Berbasis ESP32 Terintegrasi WiFi dan MQTT - Quantum Alert System
 
 ## Deskripsi Proyek
-Proyek ini merupakan implementasi sistem embedded berbasis **ESP32** yang mampu melakukan monitoring dan kontrol perangkat secara realtime melalui jaringan WiFi menggunakan protokol **MQTT**.
-
-Sistem dirancang untuk membaca input dari perangkat eksternal (tombol), mengelola proses menggunakan konsep manajemen mikroprosesor, mengontrol output menggunakan PWM, menyimpan konfigurasi, serta berkomunikasi dengan dashboard berbasis web.
-
+Sistem Quantum Alert System merupakan sistem monitoring dan kontrol perangkat berbasis mikrokontroler ESP32 yang terintegrasi jaringan WiFi dan protokol komunikasi MQTT.
+Sistem ini dirancang untuk:
+-	Memonitor status perangkat secara realtime
+-	Mengontrol mode operasi baik secara lokal (tombol) maupun remote (dashboard/web)
+-	Memberikan notifikasi visual (LED) dan audio (buzzer)
+-	Menyimpan konfigurasi mode dan level pada memori non-volatile
+-	Mengirim dan menerima data melalui broker MQTT menggunakan koneksi TLS (secure)
 ---
-
-## Fitur Utama
-
-- Monitoring status perangkat realtime
-- Kontrol mode operasi lokal & remote
-- Interrupt-based button input
-- PWM LED intensity control
-- Buzzer alert system
-- Penyimpanan konfigurasi (Preferences)
-- Komunikasi MQTT over TLS
-- WiFi connectivity
-
----
-
-## Arsitektur Sistem
-
-
-
-ESP32 berfungsi sebagai:
-
-- Controller
-- MQTT Publisher
-- MQTT Subscriber
+## Peran ESP32
+ESP32 berperan sebagai:
+-	Controller → Mengolah input & logika sistem
+-	Publisher → Mengirim status ke broker
+-	Subscriber → Menerima perintah dari dashboard
+Dengan konsep ini, sistem sudah masuk kategori IoT Embedded Monitoring & Control System.
 
 ---
 
@@ -219,4 +205,4 @@ if (doc["mode"]) {
 ---
 ## Lampiran
 - <a href="https://github.com/perdiruhiyat/UAS_Sistem-Mikroprosessor_Perdi-Ruhiyat.git">Github</a>
-- <a href="">Video Demo</a>
+- <a href="https://drive.google.com/file/d/1aV7lxps2KqNDVFhk7-OB8gJ3oZZXPso1/view?usp=sharing">Video Demo</a>
